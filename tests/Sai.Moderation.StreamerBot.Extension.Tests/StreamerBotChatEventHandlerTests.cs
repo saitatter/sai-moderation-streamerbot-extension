@@ -52,6 +52,7 @@ public sealed class StreamerBotChatEventHandlerTests
         return new ModerationBridgeService(
             new FakeBackendClient(),
             new FakePublisher(),
+            new InMemoryModerationDecisionStore(),
             new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
             NullLogger<ModerationBridgeService>.Instance);
     }
@@ -94,6 +95,15 @@ public sealed class StreamerBotChatEventHandlerTests
         public Task PublishOverlayEventAsync(
             ChatEvent chatEvent,
             ModerationResult result,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task PublishManualOverrideEventAsync(
+            ChatEvent chatEvent,
+            ModerationResult result,
+            ManualOverrideRequest request,
             CancellationToken cancellationToken)
         {
             return Task.CompletedTask;

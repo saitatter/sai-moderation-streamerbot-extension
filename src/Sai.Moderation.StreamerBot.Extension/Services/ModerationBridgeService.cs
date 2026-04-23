@@ -8,6 +8,7 @@ namespace Sai.Moderation.StreamerBot.Extension.Services;
 public sealed class ModerationBridgeService(
     IModerationBackendClient moderationBackendClient,
     IModerationEventPublisher moderationEventPublisher,
+    IModerationDecisionStore moderationDecisionStore,
     ModerationBridgeOptions options,
     ILogger<ModerationBridgeService> logger)
 {
@@ -35,6 +36,7 @@ public sealed class ModerationBridgeService(
             chatEvent.ReceivedAt);
 
         var result = await moderationBackendClient.ModerateAsync(request, cancellationToken);
+        await moderationDecisionStore.SaveAsync(chatEvent, result, cancellationToken);
         logger.LogInformation(
             "Moderation verdict received: {Verdict} ({Category}) with confidence {Confidence}.",
             result.Verdict,

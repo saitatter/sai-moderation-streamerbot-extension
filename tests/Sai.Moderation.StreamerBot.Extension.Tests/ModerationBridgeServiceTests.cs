@@ -17,6 +17,7 @@ public sealed class ModerationBridgeServiceTests
         var service = new ModerationBridgeService(
             backend,
             publisher,
+            new InMemoryModerationDecisionStore(),
             new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
             NullLogger<ModerationBridgeService>.Instance);
 
@@ -35,6 +36,7 @@ public sealed class ModerationBridgeServiceTests
         var service = new ModerationBridgeService(
             backend,
             publisher,
+            new InMemoryModerationDecisionStore(),
             new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
             NullLogger<ModerationBridgeService>.Instance);
 
@@ -86,6 +88,15 @@ public sealed class ModerationBridgeServiceTests
             CancellationToken cancellationToken)
         {
             OverlayPublishedCount += 1;
+            return Task.CompletedTask;
+        }
+
+        public Task PublishManualOverrideEventAsync(
+            ChatEvent chatEvent,
+            ModerationResult result,
+            ManualOverrideRequest request,
+            CancellationToken cancellationToken)
+        {
             return Task.CompletedTask;
         }
     }
