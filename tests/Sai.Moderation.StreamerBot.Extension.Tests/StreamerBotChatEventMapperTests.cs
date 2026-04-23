@@ -47,5 +47,51 @@ public sealed class StreamerBotChatEventMapperTests
         Assert.False(mapped);
         Assert.Null(chatEvent);
     }
-}
 
+    [Fact]
+    public void GeneratesStableMessageIdWhenPayloadOmitsMessageId()
+    {
+        var mapper = new StreamerBotChatEventMapper();
+        var payload = """
+            {
+              "event": { "source": "Twitch" },
+              "data": {
+                "user": { "id": "user-8", "name": "alice" },
+                "message": "hello world"
+              }
+            }
+            """;
+
+        var firstMapped = mapper.TryMap(payload, out var firstEvent);
+        var secondMapped = mapper.TryMap(payload, out var secondEvent);
+
+        Assert.True(firstMapped);
+        Assert.True(secondMapped);
+        Assert.NotNull(firstEvent);
+        Assert.NotNull(secondEvent);
+        Assert.Equal(firstEvent!.MessageId, secondEvent!.MessageId);
+        Assert.StartsWith("generated-", firstEvent.MessageId);
+    }
+
+    [Fact]
+    public void UsesPayloadTimestampWhenPresent()
+    {
+        var mapper = new StreamerBotChatEventMapper();
+        var payload = """
+            {
+              "event": { "source": "Twitch" },
+              "data": {
+                "timestamp": "2026-04-23T09:13:11Z",
+                "user": { "id": "user-8", "name": "alice" },
+                "message": "hello world"
+              }
+            }
+            """;
+
+        var mapped = mapper.TryMap(payload, out var chatEvent);
+
+        Assert.True(mapped);
+        Assert.NotNull(chatEvent);
+        Assert.Equal(DateTimeOffset.Parse("2026-04-23T09:13:11Z"), chatEvent!.ReceivedAt);
+    }
+}

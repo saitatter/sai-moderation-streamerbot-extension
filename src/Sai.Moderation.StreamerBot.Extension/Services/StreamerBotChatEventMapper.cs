@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 using Sai.Moderation.StreamerBot.Extension.Contracts;
 using Sai.Moderation.StreamerBot.Extension.Models;
 
@@ -23,17 +24,19 @@ public sealed class StreamerBotChatEventMapper : IStreamerBotChatEventMapper
             var text = GetMessageText(root);
             if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(text)) return false;
 
+            var userId = GetString(root, "data", "user", "id") ?? userName;
             var messageId =
                 GetString(root, "data", "messageId")
                 ?? GetString(root, "data", "message", "id")
-                ?? Guid.NewGuid().ToString("N");
+                ?? GetString(root, "data", "id")
+                ?? BuildDeterministicMessageId(source, userId, userName, text);
 
             var channelId =
                 GetString(root, "data", "channelId")
                 ?? GetString(root, "data", "channel", "id")
                 ?? "unknown-channel";
 
-            var userId = GetString(root, "data", "user", "id") ?? userName;
+            var receivedAt = GetTimestamp(root) ?? DateTimeOffset.UtcNow;
             var badges = GetBadgeUrls(root);
 
             chatEvent = new ChatEvent(
@@ -43,7 +46,7 @@ public sealed class StreamerBotChatEventMapper : IStreamerBotChatEventMapper
                 userId,
                 userName,
                 text,
-                DateTimeOffset.UtcNow,
+                receivedAt,
                 badges);
 
             return true;
@@ -61,6 +64,53 @@ public sealed class StreamerBotChatEventMapper : IStreamerBotChatEventMapper
 
         var nested = GetString(root, "data", "message", "message");
         if (!string.IsNullOrWhiteSpace(nested)) return nested;
+
+        return null;
+    }
+
+    private static string BuildDeterministicMessageId(
+        string source,
+        string userId,
+        string userName,
+        string text)
+    {
+        var input = $"{source}|{userId}|{userName}|{text}".Trim();
+        var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(input));
+        return $"generated-{Convert.ToHexString(bytes[..8]).ToLowerInvariant()}";
+    }
+
+    private static DateTimeOffset? GetTimestamp(JsonElement root)
+    {
+        var timestampCandidates = new[]
+        {
+            GetString(root, "data", "timestamp"),
+            GetString(root, "data", "message", "timestamp"),
+            GetString(root, "event", "time")
+        };
+
+        foreach (var candidate in timestampCandidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate)) continue;
+
+            if (DateTimeOffset.TryParse(candidate, out var parsed))
+            {
+                return parsed;
+            }
+
+            if (long.TryParse(candidate, out var unix))
+            {
+                try
+                {
+                    return unix > 9999999999
+                        ? DateTimeOffset.FromUnixTimeMilliseconds(unix)
+                        : DateTimeOffset.FromUnixTimeSeconds(unix);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    // Ignore invalid unix timestamps and continue with other candidates.
+                }
+            }
+        }
 
         return null;
     }
@@ -102,4 +152,3 @@ public sealed class StreamerBotChatEventMapper : IStreamerBotChatEventMapper
         return true;
     }
 }
-
