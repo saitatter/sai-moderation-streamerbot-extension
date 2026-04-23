@@ -44,9 +44,10 @@ services.AddSingleton<StreamerBotChatEventHandler>();
 services.AddSingleton<IStreamerBotRuntimeBridge, StreamerBotRuntimeBridge>();
 services.AddSingleton<IStreamerBotEventCallbackAdapter, StreamerBotEventCallbackAdapter>();
 services.AddSingleton<IStreamerBotCallbackReceiver, StreamerBotCallbackReceiver>();
+services.AddSingleton<IStreamerBotSdkEntrypoint, StreamerBotSdkEntrypoint>();
 
 var provider = services.BuildServiceProvider();
-var callbackReceiver = provider.GetRequiredService<IStreamerBotCallbackReceiver>();
+var sdkEntrypoint = provider.GetRequiredService<IStreamerBotSdkEntrypoint>();
 ```
 
 ## Callback Hook Example
@@ -59,12 +60,16 @@ using Sai.Moderation.StreamerBot.Extension.Models;
 // Pseudo-signature. Replace with the real SDK event handler signature.
 async Task OnStreamerBotEventAsync(string eventName, string rawJson, CancellationToken cancellationToken)
 {
-    var callbackEvent = new StreamerBotCallbackEvent(
-        eventName,
-        rawJson,
-        DateTimeOffset.UtcNow);
+    await sdkEntrypoint.HandleSdkEventAsync(eventName, rawJson, cancellationToken);
+}
+```
 
-    await callbackReceiver.ReceiveAsync(callbackEvent, cancellationToken);
+If the SDK callback gives a typed object payload instead of JSON string:
+
+```csharp
+async Task OnStreamerBotEventAsync(string eventName, object payload, CancellationToken cancellationToken)
+{
+    await sdkEntrypoint.HandleSdkEventAsync(eventName, payload, cancellationToken);
 }
 ```
 
@@ -118,4 +123,8 @@ var adapter = new StreamerBotEventCallbackAdapter(
 var receiver = new StreamerBotCallbackReceiver(
     adapter,
     loggerFactory.CreateLogger<StreamerBotCallbackReceiver>());
+
+var sdkEntrypoint = new StreamerBotSdkEntrypoint(
+    receiver,
+    loggerFactory.CreateLogger<StreamerBotSdkEntrypoint>());
 ```
