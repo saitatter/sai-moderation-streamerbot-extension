@@ -1,6 +1,8 @@
 # Streamer.bot Handler Usage
 
-`StreamerBotRuntimeBridge` is the runtime entrypoint for raw event payloads received from Streamer.bot.
+`StreamerBotEventCallbackAdapter` is the callback adapter you plug into Streamer.bot SDK events.
+
+`StreamerBotRuntimeBridge` is the runtime entrypoint for raw chat payloads that passed callback filtering.
 
 `StreamerBotChatEventHandler` remains the inner pipeline component that maps payloads and forwards them to moderation.
 
@@ -24,12 +26,20 @@ Minimal payload shape:
 
 ## Flow
 
-1. `StreamerBotRuntimeBridge.ProcessRawChatEventAsync(rawJson)`
-2. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
-3. Mapper parses and normalizes to `ChatEvent`
-4. `ModerationBridgeService` calls backend moderation
-5. Dashboard event is always published
-6. Overlay event is published based on verdict and bridge options
+1. Streamer.bot callback invokes `StreamerBotEventCallbackAdapter.HandleIncomingEventAsync(eventName, rawJson)`
+2. Adapter filters non-chat callbacks using `StreamerBotRuntimeOptions`
+3. `StreamerBotRuntimeBridge.ProcessRawChatEventAsync(rawJson)`
+4. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
+5. Mapper parses and normalizes to `ChatEvent`
+6. `ModerationBridgeService` calls backend moderation
+7. Dashboard event is always published
+8. Overlay event is published based on verdict and bridge options
+
+## Callback Wiring Example
+
+```csharp
+await eventCallbackAdapter.HandleIncomingEventAsync(callback.EventName, callback.RawData, cancellationToken);
+```
 
 ## Logging
 

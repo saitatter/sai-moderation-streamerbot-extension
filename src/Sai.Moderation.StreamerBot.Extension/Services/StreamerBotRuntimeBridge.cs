@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
+using Sai.Moderation.StreamerBot.Extension.Contracts;
 
 namespace Sai.Moderation.StreamerBot.Extension.Services;
 
 public sealed class StreamerBotRuntimeBridge(
     StreamerBotChatEventHandler chatEventHandler,
-    ILogger<StreamerBotRuntimeBridge> logger)
+    ILogger<StreamerBotRuntimeBridge> logger) : IStreamerBotRuntimeBridge
 {
     public async Task<bool> ProcessRawChatEventAsync(
         string rawJson,
