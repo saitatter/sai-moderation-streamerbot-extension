@@ -1,6 +1,8 @@
 # Streamer.bot Handler Usage
 
-`StreamerBotEventCallbackAdapter` is the callback adapter you plug into Streamer.bot SDK events.
+`StreamerBotCallbackReceiver` is the entrypoint you plug into Streamer.bot SDK callbacks.
+
+`StreamerBotEventCallbackAdapter` is the filtering/dispatch layer for callback event names.
 
 `StreamerBotRuntimeBridge` is the runtime entrypoint for raw chat payloads that passed callback filtering.
 
@@ -26,19 +28,25 @@ Minimal payload shape:
 
 ## Flow
 
-1. Streamer.bot callback invokes `StreamerBotEventCallbackAdapter.HandleIncomingEventAsync(eventName, rawJson)`
-2. Adapter filters non-chat callbacks using `StreamerBotRuntimeOptions`
-3. `StreamerBotRuntimeBridge.ProcessRawChatEventAsync(rawJson)`
-4. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
-5. Mapper parses and normalizes to `ChatEvent`
-6. `ModerationBridgeService` calls backend moderation
-7. Dashboard event is always published
-8. Overlay event is published based on verdict and bridge options
+1. Streamer.bot callback invokes `StreamerBotCallbackReceiver.ReceiveAsync(event)`
+2. Receiver forwards to `StreamerBotEventCallbackAdapter.HandleIncomingEventAsync(eventName, rawJson)`
+3. Adapter filters non-chat callbacks using `StreamerBotRuntimeOptions`
+4. `StreamerBotRuntimeBridge.ProcessRawChatEventAsync(rawJson)`
+5. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
+6. Mapper parses and normalizes to `ChatEvent`
+7. `ModerationBridgeService` calls backend moderation
+8. Dashboard event is always published
+9. Overlay event is published based on verdict and bridge options
 
 ## Callback Wiring Example
 
 ```csharp
-await eventCallbackAdapter.HandleIncomingEventAsync(callback.EventName, callback.RawData, cancellationToken);
+var callbackEvent = new StreamerBotCallbackEvent(
+    callback.EventName,
+    callback.RawData,
+    DateTimeOffset.UtcNow);
+
+await callbackReceiver.ReceiveAsync(callbackEvent, cancellationToken);
 ```
 
 ## Logging
