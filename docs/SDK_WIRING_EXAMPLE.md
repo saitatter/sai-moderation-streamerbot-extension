@@ -35,9 +35,16 @@ services.AddSingleton(new StreamerBotRuntimeOptions
     UseContainsFallback = true
 });
 
+services.AddSingleton(new StreamerBotPublishOptions
+{
+    DashboardChannel = "moderation.dashboard",
+    OverlayChannel = "chat.overlay"
+});
+
 services.AddSingleton<IStreamerBotChatEventMapper, StreamerBotChatEventMapper>();
 services.AddSingleton<IModerationBackendClient, HttpModerationBackendClient>();      // existing implementation
-services.AddSingleton<IModerationEventPublisher, StreamerBotModerationEventPublisher>(); // existing implementation
+services.AddSingleton<IStreamerBotChannelPublisher, YourStreamerBotChannelPublisher>(); // host-specific transport
+services.AddSingleton<IModerationEventPublisher, StreamerBotModerationEventPublisher>();
 
 services.AddSingleton<ModerationBridgeService>();
 services.AddSingleton<StreamerBotChatEventHandler>();
@@ -128,3 +135,16 @@ var sdkEntrypoint = new StreamerBotSdkEntrypoint(
     receiver,
     loggerFactory.CreateLogger<StreamerBotSdkEntrypoint>());
 ```
+
+## Channel Publisher Contract
+
+`StreamerBotModerationEventPublisher` uses this transport abstraction:
+
+```csharp
+public interface IStreamerBotChannelPublisher
+{
+    Task PublishAsync(string channel, string payload, CancellationToken cancellationToken = default);
+}
+```
+
+Implement `YourStreamerBotChannelPublisher` in plugin host code to send JSON payloads to your dashboard/overlay channels.
