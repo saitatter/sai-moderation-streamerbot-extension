@@ -89,10 +89,68 @@ public sealed class HttpModerationBackendClientTests
         Assert.Equal(2, handler.Calls);
     }
 
-    private static HttpModerationBackendClient BuildClient(HttpMessageHandler handler)
+    [Fact]
+    public async Task DoesNotRetryOnNonRetryableClientError()
+    {
+        var handler = new SequenceHttpMessageHandler(
+            _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = BuildJsonContent("""{"error":"invalid payload"}""")
+            }));
+        var client = BuildClient(handler);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            client.ModerateAsync(BuildRequest(), CancellationToken.None));
+
+        Assert.Equal(1, handler.Calls);
+    }
+
+    [Fact]
+    public async Task KeepsBaseUrlSubpathWhenBuildingModerationUri()
+    {
+        Uri? capturedRequestUri = null;
+        var handler = new SequenceHttpMessageHandler(
+            request =>
+            {
+                capturedRequestUri = request.RequestUri;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = BuildJsonContent("""
+                        {
+                          "verdict": "allow",
+                          "confidence": 0.9,
+                          "category": "safe",
+                          "reason": "ok",
+                          "latencyMs": 12
+                        }
+                        """)
+                });
+            });
+        var client = BuildClient(
+            handler,
+            new ModerationBackendClientOptions
+            {
+                BaseUrl = "http://localhost:8787/api/moderation",
+                ModeratePath = "/v1/moderate",
+                RequestTimeoutMs = 200,
+                MaxAttempts = 2,
+                RetryDelayMs = 1
+            });
+
+        await client.ModerateAsync(BuildRequest(), CancellationToken.None);
+
+        Assert.NotNull(capturedRequestUri);
+        Assert.Equal(
+            "http://localhost:8787/api/moderation/v1/moderate",
+            capturedRequestUri!.ToString());
+    }
+
+    private static HttpModerationBackendClient BuildClient(
+        HttpMessageHandler handler,
+        ModerationBackendClientOptions? options = null)
     {
         var httpClient = new HttpClient(handler);
-        var options = new ModerationBackendClientOptions
+        options ??= new ModerationBackendClientOptions
         {
             BaseUrl = "http://localhost:8787",
             ModeratePath = "/v1/moderate",
@@ -137,4 +195,3 @@ public sealed class HttpModerationBackendClientTests
         }
     }
 }
-

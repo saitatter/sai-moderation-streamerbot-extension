@@ -74,7 +74,7 @@ public sealed class HttpModerationBackendClient(
                     continue;
                 }
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException ex) when (ex.StatusCode is null)
             {
                 lastException = ex;
 
@@ -107,8 +107,11 @@ public sealed class HttpModerationBackendClient(
 
     private static Uri BuildUri(string baseUrl, string path)
     {
-        var normalizedPath = path.StartsWith('/') ? path : $"/{path}";
-        return new Uri(new Uri(baseUrl.TrimEnd('/')), normalizedPath);
+        var baseUri = baseUrl.EndsWith('/')
+            ? new Uri(baseUrl)
+            : new Uri($"{baseUrl}/");
+        var relativePath = path.TrimStart('/');
+        return new Uri(baseUri, relativePath);
     }
 
     private static ModerationResult MapResult(string messageId, ModerationResponseDto dto)
@@ -140,4 +143,3 @@ public sealed class HttpModerationBackendClient(
         string Reason,
         int LatencyMs);
 }
-
