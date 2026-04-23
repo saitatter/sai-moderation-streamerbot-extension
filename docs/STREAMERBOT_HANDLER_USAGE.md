@@ -1,6 +1,8 @@
 # Streamer.bot Handler Usage
 
-`StreamerBotChatEventHandler` is the entrypoint for raw event payloads received from Streamer.bot.
+`StreamerBotRuntimeBridge` is the runtime entrypoint for raw event payloads received from Streamer.bot.
+
+`StreamerBotChatEventHandler` remains the inner pipeline component that maps payloads and forwards them to moderation.
 
 ## Expected Input
 
@@ -22,9 +24,14 @@ Minimal payload shape:
 
 ## Flow
 
-1. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
-2. Mapper parses and normalizes to `ChatEvent`
-3. `ModerationBridgeService` calls backend moderation
-4. Dashboard event is always published
-5. Overlay event is published based on verdict and bridge options
+1. `StreamerBotRuntimeBridge.ProcessRawChatEventAsync(rawJson)`
+2. `StreamerBotChatEventHandler.HandleRawEventAsync(rawJson)`
+3. Mapper parses and normalizes to `ChatEvent`
+4. `ModerationBridgeService` calls backend moderation
+5. Dashboard event is always published
+6. Overlay event is published based on verdict and bridge options
 
+## Logging
+
+- The handler and bridge services emit structured logs and include `messageId` scope for correlation.
+- Ignored payloads (invalid shape or unsupported event type) are logged at `Debug` level.

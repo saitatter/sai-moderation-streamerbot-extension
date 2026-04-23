@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Sai.Moderation.StreamerBot.Extension.Contracts;
 using Sai.Moderation.StreamerBot.Extension.Models;
 using Sai.Moderation.StreamerBot.Extension.Options;
@@ -16,7 +17,8 @@ public sealed class ModerationBridgeServiceTests
         var service = new ModerationBridgeService(
             backend,
             publisher,
-            new ModerationBridgeOptions { ForwardFlagsToOverlay = false });
+            new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
+            NullLogger<ModerationBridgeService>.Instance);
 
         await service.HandleChatEventAsync(BuildChatEvent());
 
@@ -33,7 +35,8 @@ public sealed class ModerationBridgeServiceTests
         var service = new ModerationBridgeService(
             backend,
             publisher,
-            new ModerationBridgeOptions { ForwardFlagsToOverlay = false });
+            new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
+            NullLogger<ModerationBridgeService>.Instance);
 
         await service.HandleChatEventAsync(BuildChatEvent());
 
@@ -87,4 +90,3 @@ public sealed class ModerationBridgeServiceTests
         }
     }
 }
-

@@ -6,54 +6,50 @@ using Sai.Moderation.StreamerBot.Extension.Services;
 
 namespace Sai.Moderation.StreamerBot.Extension.Tests;
 
-public sealed class StreamerBotChatEventHandlerTests
+public sealed class StreamerBotRuntimeBridgeTests
 {
     [Fact]
-    public async Task ReturnsNullWhenMapperCannotParseEvent()
+    public async Task ReturnsFalseWhenRawPayloadIsIgnored()
     {
-        var mapper = new FakeMapper(false, null);
-        var service = BuildBridgeService();
-        var handler = new StreamerBotChatEventHandler(
-            mapper,
-            service,
-            NullLogger<StreamerBotChatEventHandler>.Instance);
+        var handler = BuildHandler(new FakeMapper(false, null));
+        var bridge = new StreamerBotRuntimeBridge(handler, NullLogger<StreamerBotRuntimeBridge>.Instance);
 
-        var result = await handler.HandleRawEventAsync("{bad json}");
+        var processed = await bridge.ProcessRawChatEventAsync("{bad json}");
 
-        Assert.Null(result);
+        Assert.False(processed);
     }
 
     [Fact]
-    public async Task ForwardsMappedEventToBridgeService()
+    public async Task ReturnsTrueWhenRawPayloadProducesModerationResult()
     {
-        var eventToMap = new ChatEvent(
+        var mappedEvent = new ChatEvent(
             "m-1",
-            "YouTube",
-            "chan-1",
+            "Twitch",
+            "c-1",
             "u-1",
             "alice",
             "hello",
             DateTimeOffset.UtcNow);
-        var mapper = new FakeMapper(true, eventToMap);
-        var service = BuildBridgeService();
-        var handler = new StreamerBotChatEventHandler(
-            mapper,
-            service,
-            NullLogger<StreamerBotChatEventHandler>.Instance);
+        var handler = BuildHandler(new FakeMapper(true, mappedEvent));
+        var bridge = new StreamerBotRuntimeBridge(handler, NullLogger<StreamerBotRuntimeBridge>.Instance);
 
-        var result = await handler.HandleRawEventAsync("{}");
+        var processed = await bridge.ProcessRawChatEventAsync("{}");
 
-        Assert.NotNull(result);
-        Assert.Equal(ModerationVerdict.Allow, result!.Verdict);
+        Assert.True(processed);
     }
 
-    private static ModerationBridgeService BuildBridgeService()
+    private static StreamerBotChatEventHandler BuildHandler(IStreamerBotChatEventMapper mapper)
     {
-        return new ModerationBridgeService(
+        var moderationService = new ModerationBridgeService(
             new FakeBackendClient(),
             new FakePublisher(),
-            new ModerationBridgeOptions { ForwardFlagsToOverlay = false },
+            new ModerationBridgeOptions(),
             NullLogger<ModerationBridgeService>.Instance);
+
+        return new StreamerBotChatEventHandler(
+            mapper,
+            moderationService,
+            NullLogger<StreamerBotChatEventHandler>.Instance);
     }
 
     private sealed class FakeMapper(bool shouldMap, ChatEvent? mappedEvent) : IStreamerBotChatEventMapper
@@ -74,10 +70,10 @@ public sealed class StreamerBotChatEventHandlerTests
             return Task.FromResult(new ModerationResult(
                 request.MessageId,
                 ModerationVerdict.Allow,
-                0.99,
+                0.97,
                 "safe",
                 "ok",
-                5));
+                7));
         }
     }
 
