@@ -1,0 +1,16 @@
+{
+  "name": "sai-moderation-streamerbot-extension",
+  "private": true,
+  "version": "0.0.0-development",
+  "description": "Release metadata and conventions for Streamer.bot moderation extension.",
+  "scripts": {
+    "check": "dotnet test sai-moderation-streamerbot-extension.slnx --configuration Release"
+  },
+  "devDependencies": {
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.4",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "semantic-release": "^24.2.7"
+  }
+}
+

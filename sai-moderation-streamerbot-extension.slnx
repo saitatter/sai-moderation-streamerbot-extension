@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sai.Moderation.StreamerBot.Extension/Sai.Moderation.StreamerBot.Extension.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sai.Moderation.StreamerBot.Extension.Tests/Sai.Moderation.StreamerBot.Extension.Tests.csproj" />
+  </Folder>
+</Solution>
