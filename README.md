@@ -20,6 +20,11 @@ dotnet build
 dotnet test
 ```
 
+## Runtime Notes
+
+- `HttpModerationBackendClient` supports bearer token auth through `HttpModerationBackendClientOptions.ApiToken`.
+- `HttpStreamerBotChannelPublisher` supports bearer token auth through `HttpChannelPublisherOptions.ApiToken`.
+- For persistence across restarts, use `SqliteModerationDecisionStore` instead of `InMemoryModerationDecisionStore`.
+
 ## Integration Contract
 See [docs/INTEGRATION_CONTRACT.md](docs/INTEGRATION_CONTRACT.md).
-

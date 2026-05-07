@@ -78,3 +78,34 @@ Overlay receives:
 - Contract version is tied to repository release tags.
 - Breaking changes must increment major version and be documented in release notes.
 
+## 6) Manual Override Callback: Dashboard -> Extension
+
+`POST/Callback payload` (transport depends on host wiring)
+
+```json
+{
+  "messageId": "msg-123",
+  "action": "approve",
+  "operatorId": "mod-1",
+  "reason": "context reviewed"
+}
+```
+
+Allowed `action` values:
+- `approve`
+- `block`
+- `falsePositive`
+
+## 7) Manual Override Event: Extension -> Dashboard Channel
+
+```json
+{
+  "eventType": "moderation.override",
+  "messageId": "msg-123",
+  "operatorId": "mod-1",
+  "action": "approve",
+  "reason": "context reviewed",
+  "verdict": "allow",
+  "category": "manual-override"
+}
+```

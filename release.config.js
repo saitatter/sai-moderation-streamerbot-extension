@@ -34,7 +34,7 @@ module.exports = {
         }
       }
     ],
+    "./scripts/semantic-release/full-comparison.cjs",
     "@semantic-release/github"
   ]
 };
-
